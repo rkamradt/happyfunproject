@@ -1,12 +1,13 @@
 package net.kamradtfamily.happyfun;
 
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.log4j.Logger;
 
 /**
@@ -43,21 +44,23 @@ public class HappyFunClass implements Runnable {
   @Override
   public void run() {
     ExecutorService service = Executors.newFixedThreadPool(10, r -> new Thread(r, "HappyFunThread-" + threadNumber++));
-    BlockingQueue<HappyFunItem> queue = new SynchronousQueue<>();
-    Future<Boolean> runner = service.submit(new HappyFunTakerRunner(queue));
-    HappyFunMakerRunner maker = new HappyFunMakerRunner(queue, service);
-    service.submit(maker);
+    BlockingQueue<HappyFunItem> queue1 = new ArrayBlockingQueue<>(100);
+    BlockingQueue<HappyFunItem> queue2 = new ArrayBlockingQueue<>(100);
+    Future taker = service.submit(new HappyFunTakerRunner(queue1, queue2));
+    Future runner = service.submit(new HappyFunMakerRunner(queue2, queue1));
     try {
-      logger.info("runner returned "+runner.get());
-      synchronized (maker) {
-        maker.notify();
-      }
+      runner.get(1000, TimeUnit.SECONDS);
+      taker.get(1000, TimeUnit.SECONDS);
       logger.info("shuting down");
       service.shutdown();
       logger.info("awaiting termination");
       service.awaitTermination(10, TimeUnit.SECONDS);
-    } catch(InterruptedException | ExecutionException ex) {
-      logger.error("exception thrown during run", ex);
+    } catch (InterruptedException ex) {
+      logger.error("interrupted while awaiting termination", ex);
+    } catch (TimeoutException ex) {
+      logger.error("timeout while awaiting termination", ex);
+    } catch (ExecutionException ex) {
+      logger.error("excepted while awaiting termination", ex);
     }
     logger.info("done");
   }

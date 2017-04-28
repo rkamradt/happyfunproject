@@ -1,33 +1,35 @@
 package net.kamradtfamily.happyfun;
 
-import org.apache.log4j.Logger;
-
 /**
  *
  * @author rkamradt
  */
-public class HappyFunItem implements Runnable {  
-  private final String message;
-  private final boolean happy;
-  private final HappyFunMakerRunner maker;
+public class HappyFunItem {  
+  public final String REALLY_HAPPY_MESSAGE = "Really happy";
+  public final String HAPPY_MESSAGE = "Happy";
+  public final String UNHAPPY_MESSAGE = "Unhappy";
+  private int happiness;
 
-  public HappyFunItem(Boolean happy, HappyFunMakerRunner maker) {
-    this.message = happy ? "Are we happy yet" : "Unhappy";
-    this.happy = happy;
-    this.maker = maker;
+  public HappyFunItem(int happiness) {
+    this.happiness = happiness;
   }
 
-  @Override
-  public void run() {
-    maker.getItemBack(this);
+  public void getBored() {
+    happiness--;
   }
-
   public boolean isHappy() {
-    return happy;
+    return happiness > 0;
   }
 
   public String getMessage() {
-    return message;
+    if(happiness > 10) {
+      return REALLY_HAPPY_MESSAGE;
+    }
+    return isHappy() ? HAPPY_MESSAGE : UNHAPPY_MESSAGE;
+  }
+
+  public int getHappiness() {
+    return happiness;
   }
   
 }
